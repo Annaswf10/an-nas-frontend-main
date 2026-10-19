@@ -53,8 +53,8 @@ const Header = () => {
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link className="dropdown-item py-2" to="/news" onClick={closeMobileMenu}>
-                                        <i className="fa-regular fa-newspaper text-secondary-custom me-2"></i> {t('nav_news')}
+                                    <Link className="dropdown-item py-2" to="/blogs" onClick={closeMobileMenu}>
+                                        <i className="fa-regular fa-newspaper text-secondary-custom me-2"></i> {t('nav_blogs')}
                                     </Link>
                                 </li>
                             </ul>

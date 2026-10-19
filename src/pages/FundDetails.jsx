@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import axios from 'axios';
 import Swal from 'sweetalert2';
-import { useTranslation } from 'react-i18next'; // ট্রান্সলেশন ইম্পোর্ট করা হলো
+import { useTranslation } from 'react-i18next';
 
 const FundDetails = () => {
     const { t } = useTranslation();
     const { fundName } = useParams(); 
 
-    // ডাটাবেস থেকে ট্রান্সলেশন অনুযায়ী ডাটা নেওয়া হলো
+    // ডাটাবেস থেকে ট্রান্সলেশন অনুযায়ী ডাটা নেওয়া হলো
     const fundsData = t('funds_data', { returnObjects: true });
     
     // ভিডিওগুলোর লিস্ট
@@ -35,6 +36,7 @@ const FundDetails = () => {
     const [paymentMethod, setPaymentMethod] = useState('bkash');
     const [name, setName] = useState('');
     const [emailOrPhone, setEmailOrPhone] = useState('');
+    const [transactionId, setTransactionId] = useState(''); // নতুন ট্রানজেকশন আইডি স্টেট
 
     const [copiedText, setCopiedText] = useState('');
 
@@ -60,13 +62,15 @@ const FundDetails = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // Node.js ব্যাকএন্ডের জন্য ডাটা সাজানো
         const donationData = {
-            name: name,
-            email_or_phone: emailOrPhone,
+            donor_name: name,
+            phone: emailOrPhone, // Contact হিসেবে ফোন নাম্বার পাঠানো হচ্ছে
+            email: '', // চাইলে ইমেইল ফিল্ড যোগ করতে পারেন
             amount: amount,
-            fund_type: fundName || 'zakat',
-            frequency: isRegularDonation ? frequency : 'one-time',
-            payment_method: isRegularDonation ? paymentMethod : 'bank_transfer',
+            fund_name: currentFund.title, // ডাটাবেসে ফান্ডের সুন্দর নামটি সেভ হবে
+            payment_method: isRegularDonation ? paymentMethod : 'Bank Transfer',
+            transaction_id: transactionId
         };
 
         try {
@@ -79,42 +83,29 @@ const FundDetails = () => {
                 }
             });
 
-            const response = await fetch('http://127.0.0.1:8000/api/donate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(donationData)
-            });
+            // Node.js এর নতুন API তে রিকোয়েস্ট পাঠানো
+            const response = await axios.post('http://localhost:5000/api/donations/submit', donationData);
 
-            const result = await response.json();
-
-            if (response.ok) {
+            if (response.data.success) {
                 Swal.fire({
                     icon: 'success',
                     title: t('swal_success_title2'),
-                    text: result.message || t('swal_success_msg'),
+                    text: response.data.message || t('swal_success_msg'),
                     confirmButtonColor: '#006a4e'
                 });
                 
+                // ফর্ম ক্লিয়ার করা
                 setAmount('');
                 setName('');
                 setEmailOrPhone('');
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: t('swal_err_title2'),
-                    text: result.message || t('swal_err_msg'),
-                    confirmButtonColor: '#d33'
-                });
+                setTransactionId('');
             }
         } catch (error) {
             console.error('API Error:', error);
             Swal.fire({
                 icon: 'error',
-                title: t('swal_server_err'),
-                text: t('swal_server_msg'),
+                title: t('swal_err_title2'),
+                text: error.response?.data?.message || t('swal_err_msg'),
                 confirmButtonColor: '#d33'
             });
         }
@@ -163,7 +154,7 @@ const FundDetails = () => {
                                 {isRegularDonation ? t('fd_sectors_regular') : t('fd_sectors_other')}
                             </h4>
                             <ul className="list-unstyled mb-0">
-                                {currentFund.sectors.map((sector, index) => (
+                                {currentFund.sectors?.map((sector, index) => (
                                     <li key={index} className="d-flex mb-3 align-items-start">
                                         <i className="fa-solid fa-circle-check text-success fs-5 me-3 mt-1"></i>
                                         <span className="fs-5 text-dark">{sector}</span>
@@ -214,7 +205,7 @@ const FundDetails = () => {
                                 <div className="mb-3">
                                     <label className="form-label fw-bold">{t('fd_name_label')}</label>
                                     <input type="text" className="form-control py-2" placeholder={t('fd_name_ph')} 
-                                        value={name} onChange={(e) => setName(e.target.value)} 
+                                        value={name} onChange={(e) => setName(e.target.value)} required
                                     />
                                 </div>
 
@@ -227,9 +218,8 @@ const FundDetails = () => {
 
                                 {isRegularDonation && (
                                     <>
-                                        <div className="mb-4"><label className="form-label fw-bold">{t('fd_behalf_label')}</label><input type="text" className="form-control py-2" placeholder={t('fd_name_ph')} /></div>
                                         <div className="mb-4">
-                                            <label className="form-label fw-bold text-danger">{t('fd_payment_label')}</label>
+                                            <label className="form-label fw-bold text-danger">{t('fd_payment_label', 'Payment Method')}</label>
                                             <div className="d-flex gap-3 align-items-center p-3 border rounded-3 bg-light">
                                                 <div className="form-check"><input className="form-check-input" type="radio" name="payment" id="bkash" checked={paymentMethod === 'bkash'} onChange={() => setPaymentMethod('bkash')} /><label className="form-check-label fw-bold" style={{ color: '#e2136e' }} htmlFor="bkash">bKash</label></div>
                                                 <div className="form-check"><input className="form-check-input" type="radio" name="payment" id="nagad" checked={paymentMethod === 'nagad'} onChange={() => setPaymentMethod('nagad')} /><label className="form-check-label fw-bold" style={{ color: '#f7931e' }} htmlFor="nagad">Nagad</label></div>
@@ -238,7 +228,18 @@ const FundDetails = () => {
                                     </>
                                 )}
 
-                                <button type="submit" className="btn btn-success w-100 py-3 fw-bold fs-5 rounded-3 mt-2">{t('fd_next_step')}</button>
+                                {/* নতুন Transaction ID ইনপুট ফিল্ড */}
+                                <div className="mb-4">
+                                    <label className="form-label fw-bold text-success">Transaction ID (TrxID) *</label>
+                                    <input type="text" className="form-control py-2 border-success" required placeholder="উদাহরণ: 8XDF9WE..." 
+                                        value={transactionId} onChange={(e) => setTransactionId(e.target.value)} 
+                                    />
+                                    <small className="text-muted mt-1 d-block">টাকা পাঠানোর পর প্রাপ্ত TrxID টি এখানে লিখুন।</small>
+                                </div>
+
+                                <button type="submit" className="btn btn-success w-100 py-3 fw-bold fs-5 rounded-3 mt-2">
+                                    {t('fd_next_step')}
+                                </button>
                             </form>
                         </div>
 
@@ -294,7 +295,7 @@ const FundDetails = () => {
                 </div>
             </div>
 
-            {/* Extended Zakat Calculator Modal */}
+            {/* Extended Zakat Calculator Modal (No changes made here) */}
             <div className="modal fade" id="zakatCalculatorModal" tabIndex="-1" aria-hidden="true">
                 <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                     <div className="modal-content border-0 shadow-lg rounded-4">

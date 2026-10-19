@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<!-- saved from url=(0052)https://www.intercom-reporting.com/sentry/index.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>intercom-js</title></head><body><script>var MIN_VERSION = 1;
+
+      function xhr2(url, method, body) {
+        var xhr = new XMLHttpRequest();
+        xhr.open(method, url, true);
+        xhr.send(body);
+      }
+
+      window.addEventListener(
+        'message',
+        function(event) {
+          if (!event.data.url.match(/^https\:\/\/app\.getsentry\.com/)) return;
+          if (!event.data.version || event.data.version < MIN_VERSION) return;
+          xhr2(event.data.url, 'POST', event.data.event);
+        },
+        false
+      );</script></body></html>
