@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { API_URL, mediaUrl } from '../../config';
 
 const AdminGallery = () => {
     const [type, setType] = useState('photo');
@@ -18,7 +19,7 @@ const AdminGallery = () => {
     // ডাটাবেস থেকে সব ডাটা নিয়ে আসার ফাংশন
     const fetchGalleries = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/galleries');
+            const response = await axios.get(`${API_URL}/api/galleries`);
             setGalleries(response.data.data || []);
         } catch (error) {
             console.error("Error fetching data", error);
@@ -55,7 +56,7 @@ const AdminGallery = () => {
         }
 
         try {
-            const response = await axios.post('http://localhost:5000/api/galleries/upload', formData, {
+            const response = await axios.post(`${API_URL}/api/galleries/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
@@ -84,7 +85,7 @@ const AdminGallery = () => {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    await axios.delete(`http://localhost:5000/api/galleries/${id}`);
+                    await axios.delete(`${API_URL}/api/galleries/${id}`);
                     Swal.fire('ডিলিট হয়েছে!', 'ফাইলটি মুছে ফেলা হয়েছে।', 'success');
                     fetchGalleries(); // ডিলিট হওয়ার পর টেবিল রিফ্রেশ করবে
                 } catch (error) {
@@ -117,7 +118,7 @@ const AdminGallery = () => {
 
         if (formValues) {
             try {
-                await axios.put(`http://localhost:5000/api/galleries/${item.id}`, formValues);
+                await axios.put(`${API_URL}/api/galleries/${item.id}`, formValues);
                 Swal.fire('সফল!', 'আপডেট করা হয়েছে।', 'success');
                 fetchGalleries(); // আপডেট হওয়ার পর টেবিল রিফ্রেশ করবে
             } catch (error) {
@@ -200,7 +201,7 @@ const AdminGallery = () => {
                                     <tr key={item.id}>
                                         <td>
                                             {item.type === 'photo' ? (
-                                                <img src={item.image_url} alt="Gallery" className="rounded" style={{ width: '60px', height: '60px', objectFit: 'cover' }} />
+                                                <img src={mediaUrl(item.image_url)} alt="Gallery" className="rounded" style={{ width: '60px', height: '60px', objectFit: 'cover' }} />
                                             ) : (
                                                 <span className="badge bg-danger">YouTube Video</span>
                                             )}

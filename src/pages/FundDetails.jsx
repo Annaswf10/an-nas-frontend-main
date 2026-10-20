@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { useTranslation } from 'react-i18next';
+import { API_URL } from '../config';
 
 const FundDetails = () => {
     const { t } = useTranslation();
@@ -84,7 +85,7 @@ const FundDetails = () => {
             });
 
             // Node.js এর নতুন API তে রিকোয়েস্ট পাঠানো
-            const response = await axios.post('http://localhost:5000/api/donations/submit', donationData);
+            const response = await axios.post(`${API_URL}/api/donations/submit`, donationData);
 
             if (response.data.success) {
                 Swal.fire({

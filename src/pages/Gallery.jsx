@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
+import { API_URL, mediaUrl } from '../config';
 
 const Gallery = () => {
   const { t } = useTranslation();
@@ -25,7 +26,7 @@ const Gallery = () => {
 
   useEffect(() => {
     axios
-      .get('http://localhost:5000/api/galleries')
+      .get(`${API_URL}/api/galleries`)
       .then((response) => {
         if (response.data && Array.isArray(response.data.data)) {
           setMediaData(response.data.data);
@@ -40,13 +41,13 @@ const Gallery = () => {
   const getImageUrl = (imagePath) => {
     if (!imagePath)
       return 'https://images.unsplash.com/photo-1610116306796-6fea9f4fae38?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-    if (imagePath.startsWith('http')) return imagePath;
+    if (imagePath.startsWith('http')) return mediaUrl(imagePath);
 
     // Windows path (uploads\abc\photo.jpg) এর সব '\' কে '/' বানানো
     const cleanPath = imagePath.replace(/\\/g, '/');
-    if (cleanPath.startsWith('uploads/')) return `http://localhost:5000/${cleanPath}`;
+    if (cleanPath.startsWith('uploads/')) return `${API_URL}/${cleanPath}`;
 
-    return `http://localhost:5000/uploads/${cleanPath}`;
+    return `${API_URL}/uploads/${cleanPath}`;
   };
 
   const getYouTubeEmbedUrl = (url) => {

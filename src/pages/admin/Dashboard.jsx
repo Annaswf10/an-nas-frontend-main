@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_URL } from '../../config';
 
 const Dashboard = () => {
     // ডাটা ধরে রাখার স্টেট
@@ -18,11 +19,11 @@ const Dashboard = () => {
         const fetchDashboardStats = async () => {
             try {
                 // ১. ড্যাশবোর্ডের মূল ডাটা আনা
-                const response = await axios.get('http://localhost:5000/api/dashboard/stats');
+                const response = await axios.get(`${API_URL}/api/dashboard/stats`);
                 let dashboardData = response.data.success ? response.data.data : {};
 
                 // ২. ব্লগের ডাটা আনা
-                const blogRes = await axios.get('http://localhost:5000/api/blogs');
+                const blogRes = await axios.get(`${API_URL}/api/blogs`);
                 const totalBlogs = blogRes.data.success ? blogRes.data.data.length : 0;
 
                 // ৩. স্টেট আপডেট করা (সব ডাটা একসাথে)

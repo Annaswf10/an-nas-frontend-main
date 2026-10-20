@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { useTranslation } from 'react-i18next';
+import { API_URL } from '../config';
 
 const Contact = () => {
   const { t } = useTranslation();
@@ -32,7 +33,7 @@ const Contact = () => {
 
     try {
      
-      const response = await axios.post('http://localhost:5000/api/contact/send', formData);
+      const response = await axios.post(`${API_URL}/api/contact/send`, formData);
 
       if (response.data.success) {
         // Show success message

@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { API_URL } from '../../config';
 
 const AdminBlogs = () => {
     const [blogs, setBlogs] = useState([]);
 
     const fetchBlogs = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/blogs');
+            const response = await axios.get(`${API_URL}/api/blogs`);
             if (response.data.success) setBlogs(response.data.data);
         } catch (error) {
             console.error('Error fetching blogs');
@@ -29,7 +30,7 @@ const AdminBlogs = () => {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    await axios.delete(`http://localhost:5000/api/blogs/delete/${id}`);
+                    await axios.delete(`${API_URL}/api/blogs/delete/${id}`);
                     Swal.fire('Deleted!', 'নিউজটি ডিলিট করা হয়েছে।', 'success');
                     fetchBlogs(); // লিস্ট আপডেট করা
                 } catch (error) {
@@ -64,7 +65,7 @@ const AdminBlogs = () => {
                                 <td>{index + 1}</td>
                                 <td>
                                     {blog.image ? (
-                                        <img src={`http://localhost:5000/uploads/${blog.image}`} alt="blog" style={{width: '60px', height: '40px', objectFit: 'cover', borderRadius: '5px'}} />
+                                        <img src={`${API_URL}/uploads/${blog.image}`} alt="blog" style={{width: '60px', height: '40px', objectFit: 'cover', borderRadius: '5px'}} />
                                     ) : (
                                         <span className="badge bg-secondary">No Image</span>
                                     )}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { API_URL } from '../../config';
 
 const AdminMessages = () => {
     const [messages, setMessages] = useState([]);
@@ -9,7 +10,7 @@ const AdminMessages = () => {
 
     const fetchMessages = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/messages');
+            const response = await axios.get(`${API_URL}/api/messages`);
             setMessages(response.data.data || []);
         } catch (error) {
             console.error("Error fetching messages:", error);
@@ -34,7 +35,7 @@ const AdminMessages = () => {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    await axios.delete(`http://localhost:5000/api/messages/${id}`);
+                    await axios.delete(`${API_URL}/api/messages/${id}`);
                     Swal.fire('Deleted!', 'Message has been deleted.', 'success');
                     fetchMessages();
                 } catch (error) {

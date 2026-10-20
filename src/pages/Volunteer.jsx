@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { useTranslation, Trans } from 'react-i18next';
+import { API_URL } from '../config';
 
 const Volunteer = () => {
   const { t } = useTranslation();
@@ -39,7 +40,7 @@ const Volunteer = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/api/volunteers/submit', data, {
+      const response = await axios.post(`${API_URL}/api/volunteer/submit`, data, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 

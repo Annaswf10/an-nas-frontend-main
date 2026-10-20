@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
+import { API_URL, mediaUrl } from '../config';
 
 const Activities = () => {
   const { t } = useTranslation();
@@ -9,7 +10,7 @@ const Activities = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/api/activities")
+      .get(`${API_URL}/api/activities`)
       .then((response) => {
         if (response.data.data) {
           setActivities(response.data.data);
@@ -26,15 +27,15 @@ const Activities = () => {
   const getImageUrl = (imagePath) => {
     if (!imagePath)
       return "https://images.unsplash.com/photo-1610116306796-6fea9f4fae38?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
-    if (imagePath.startsWith("http")) return imagePath;
+    if (imagePath.startsWith("http")) return mediaUrl(imagePath);
 
     // ডাটাবেসে যদি 'uploads/' সহ সেভ হয়, তবে ডাবল ফোল্ডার হওয়া ঠেকাবে
     if (imagePath.startsWith("uploads/"))
-      return `http://localhost:5000/${imagePath}`;
+      return `${API_URL}/${imagePath}`;
     if (imagePath.startsWith("uploads\\"))
-      return `http://localhost:5000/${imagePath.replace("\\", "/")}`;
+      return `${API_URL}/${imagePath.replace("\\", "/")}`;
 
-    return `http://localhost:5000/uploads/${imagePath}`;
+    return `${API_URL}/uploads/${imagePath}`;
   };
 
   return (

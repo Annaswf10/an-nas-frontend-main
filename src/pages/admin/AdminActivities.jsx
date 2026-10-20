@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { API_URL } from '../../config';
 
 const AdminActivities = () => {
     const [activities, setActivities] = useState([]);
@@ -15,7 +16,7 @@ const AdminActivities = () => {
     // ডাটা নিয়ে আসার ফাংশন
     const fetchActivities = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/activities');
+            const response = await axios.get(`${API_URL}/api/activities`);
             setActivities(response.data.data || []);
         } catch (error) {
             console.error("Error fetching data", error);
@@ -53,7 +54,7 @@ const AdminActivities = () => {
         if (image) formData.append('image', image);
 
         try {
-            const response = await axios.post('http://localhost:5000/api/activities/upload', formData, {
+            const response = await axios.post(`${API_URL}/api/activities/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
@@ -87,7 +88,7 @@ const AdminActivities = () => {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    await axios.delete(`http://localhost:5000/api/activities/${id}`);
+                    await axios.delete(`${API_URL}/api/activities/${id}`);
                     Swal.fire('ডিলিট হয়েছে!', 'ফাইলটি মুছে ফেলা হয়েছে।', 'success');
                     fetchActivities();
                 } catch (error) {
@@ -173,7 +174,7 @@ const AdminActivities = () => {
                                     <tr key={item.id}>
                                         <td className="px-4">
                                             <img 
-                                                src={item.image ? (item.image.startsWith('http') ? item.image : `http://localhost:5000/uploads/${item.image}`) : 'https://via.placeholder.com/60'} 
+                                                src={item.image ? (item.image.startsWith('http') ? item.image : `${API_URL}/uploads/${item.image}`) : 'https://via.placeholder.com/60'} 
                                                 alt="Activity" 
                                                 className="rounded shadow-sm" 
                                                 style={{ width: '60px', height: '60px', objectFit: 'cover' }} 

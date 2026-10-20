@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_URL } from '../../config';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -17,7 +18,7 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/login', formData);
+            const response = await axios.post(`${API_URL}/api/auth/login`, formData);
             if (response.data.success) {
                 // টোকেন এবং এডমিনের ডাটা ব্রাউজারের লোকাল স্টোরেজে সেভ করা হচ্ছে
                 localStorage.setItem('adminToken', response.data.token);

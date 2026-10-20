@@ -3,6 +3,7 @@ import axios from 'axios';
 import JoditEditor from 'jodit-react';
 import Swal from 'sweetalert2';
 import { useParams, useNavigate } from 'react-router-dom';
+import { API_URL } from '../../config';
 
 const EditBlog = () => {
   const { id } = useParams();
@@ -36,7 +37,7 @@ const EditBlog = () => {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:5000/api/blogs/${id}`)
+      .get(`${API_URL}/api/blogs/${id}`)
       .then((res) => {
         if (res.data.success) {
           setTitleEn(res.data.data.title || '');
@@ -60,7 +61,7 @@ const EditBlog = () => {
     if (image) formData.append('image', image);
 
     try {
-      const response = await axios.put(`http://localhost:5000/api/blogs/update/${id}`, formData, {
+      const response = await axios.put(`${API_URL}/api/blogs/update/${id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       if (response.data.success) {

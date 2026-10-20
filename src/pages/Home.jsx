@@ -14,6 +14,7 @@ import qurbaniImg from "../assets/image/Qurbani-for-All.png";
 import selfRelianceImg from "../assets/image/Self-Reliance-Fund.png";
 import disasterImg from "../assets/image/Emergency-Disaster.png";
 import winterImg from "../assets/image/Winter-Relief.png";
+import { API_URL, mediaUrl } from '../config';
 
 const AnimatedCounter = ({ end, duration = 2000 }) => {
   const [count, setCount] = React.useState(0);
@@ -50,7 +51,7 @@ const Home = () => {
 
     const fetchActivities = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/activities");
+        const response = await fetch(`${API_URL}/api/activities`);
         const result = await response.json();
         if (result.data || result.activities) {
           const data = result.data || result.activities;
@@ -65,7 +66,7 @@ const Home = () => {
 
     const fetchNews = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/blogs");
+        const response = await fetch(`${API_URL}/api/blogs`);
         const result = await response.json();
         if (result.success && result.data) {
           setNews(result.data.slice(0, 3));
@@ -81,12 +82,12 @@ const Home = () => {
 
   const getImageUrl = (imagePath, fallback) => {
     if (!imagePath) return fallback;
-    if (imagePath.startsWith("http")) return imagePath;
+    if (imagePath.startsWith("http")) return mediaUrl(imagePath);
     if (imagePath.startsWith("uploads/"))
-      return `http://localhost:5000/${imagePath}`;
+      return `${API_URL}/${imagePath}`;
     if (imagePath.startsWith("uploads\\"))
-      return `http://localhost:5000/${imagePath.replace("\\", "/")}`;
-    return `http://localhost:5000/uploads/${imagePath}`;
+      return `${API_URL}/${imagePath.replace("\\", "/")}`;
+    return `${API_URL}/uploads/${imagePath}`;
   };
 
   return (

@@ -1,0 +1,9 @@
+# React Router-এর জন্য: /gallery, /admin/login ইত্যাদি পেজে refresh দিলে 404 না দেখিয়ে index.html দেখাবে
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>

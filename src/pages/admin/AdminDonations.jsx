@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_URL } from '../../config';
 
 const AdminDonations = () => {
     const [donations, setDonations] = useState([]);
@@ -9,8 +10,8 @@ const AdminDonations = () => {
     const fetchData = async () => {
         try {
             const [donationRes, summaryRes] = await Promise.all([
-                axios.get('http://localhost:5000/api/donations'),
-                axios.get('http://localhost:5000/api/donations/summary')
+                axios.get(`${API_URL}/api/donations`),
+                axios.get(`${API_URL}/api/donations/summary`)
             ]);
             setDonations(donationRes.data.data || []);
             setSummary(summaryRes.data.data || []);

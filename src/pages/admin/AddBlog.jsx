@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import JoditEditor from 'jodit-react';
 import Swal from 'sweetalert2';
+import { API_URL } from '../../config';
 
 const AddBlog = () => {
   const editorEn = useRef(null);
@@ -26,7 +27,7 @@ const AddBlog = () => {
     if (image) formData.append('image', image);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/blogs/add', formData, {
+      const response = await axios.post(`${API_URL}/api/blogs/add`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 

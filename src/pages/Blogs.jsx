@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import { API_URL, mediaUrl } from '../config';
 
 const Blogs = () => {
   const [blogs, setBlogs] = useState([]);
@@ -10,7 +11,7 @@ const Blogs = () => {
 
   useEffect(() => {
     axios
-      .get('http://localhost:5000/api/blogs')
+      .get(`${API_URL}/api/blogs`)
       .then((response) => {
         if (response.data.success) {
           setBlogs(response.data.data);
@@ -21,11 +22,11 @@ const Blogs = () => {
 
   const getImageUrl = (imagePath) => {
     if (!imagePath) return null;
-    if (imagePath.startsWith('http')) return imagePath;
-    if (imagePath.startsWith('uploads/')) return `http://localhost:5000/${imagePath}`;
+    if (imagePath.startsWith('http')) return mediaUrl(imagePath);
+    if (imagePath.startsWith('uploads/')) return `${API_URL}/${imagePath}`;
     if (imagePath.startsWith('uploads\\'))
-      return `http://localhost:5000/${imagePath.replace('\\', '/')}`;
-    return `http://localhost:5000/uploads/${imagePath}`;
+      return `${API_URL}/${imagePath.replace('\\', '/')}`;
+    return `${API_URL}/uploads/${imagePath}`;
   };
 
   return (

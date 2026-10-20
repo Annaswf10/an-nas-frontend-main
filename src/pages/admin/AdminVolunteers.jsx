@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { API_URL, mediaUrl } from '../../config';
 
 const AdminVolunteers = () => {
     const [volunteers, setVolunteers] = useState([]);
@@ -8,7 +9,7 @@ const AdminVolunteers = () => {
 
     const fetchVolunteers = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/volunteer');
+            const response = await axios.get(`${API_URL}/api/volunteer`);
             setVolunteers(response.data.data || []);
         } catch (error) {
             console.error("Error fetching volunteers", error);
@@ -33,7 +34,7 @@ const AdminVolunteers = () => {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    await axios.delete(`http://localhost:5000/api/volunteer/${id}`);
+                    await axios.delete(`${API_URL}/api/volunteer/${id}`);
                     Swal.fire('Deleted!', 'Volunteer application has been deleted.', 'success');
                     fetchVolunteers();
                 } catch (error) {
@@ -71,7 +72,7 @@ const AdminVolunteers = () => {
                                             <td className="px-4">
                                                 {item.image_url ? (
                                                     <img 
-                                                        src={item.image_url} 
+                                                        src={mediaUrl(item.image_url)} 
                                                         alt={item.name} 
                                                         className="rounded-circle shadow-sm" 
                                                         style={{ width: '50px', height: '50px', objectFit: 'cover' }} 
