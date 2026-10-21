@@ -56,9 +56,14 @@ const Dashboard = () => {
                 <div className="col-md-4">
                     <div className="card text-white border-0 shadow-sm rounded-4 p-4 d-flex flex-row align-items-center justify-content-between" style={{ backgroundColor: '#006a4e' }}>
                         <div>
-                            <h6 className="mb-1 opacity-75">Total Donations</h6>
+                            <h6 className="mb-1 opacity-75">Verified Donations</h6>
                             <h2 className="fw-bold mb-0">৳ {Number(stats.totalDonationAmount || 0).toLocaleString('en-IN')}</h2>
                             <small className="opacity-75">From {stats.totalDonors || 0} Donors</small>
+                            {stats.pendingDonations > 0 && (
+                                <div className="small mt-1">
+                                    <span className="badge bg-warning text-dark">{stats.pendingDonations} pending verification</span>
+                                </div>
+                            )}
                         </div>
                         <i className="fa-solid fa-hand-holding-dollar fs-1 opacity-50"></i>
                     </div>

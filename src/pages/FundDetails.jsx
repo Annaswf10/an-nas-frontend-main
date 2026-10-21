@@ -91,7 +91,7 @@ const FundDetails = () => {
                 Swal.fire({
                     icon: 'success',
                     title: t('swal_success_title2'),
-                    text: response.data.message || t('swal_success_msg'),
+                    text: t('swal_success_msg'),
                     confirmButtonColor: '#006a4e'
                 });
                 

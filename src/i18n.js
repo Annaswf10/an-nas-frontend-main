@@ -304,7 +304,8 @@ const resources = {
       swal_processing: 'Processing...',
       swal_wait: 'Please wait',
       swal_success_title2: 'Alhamdulillah!',
-      swal_success_msg: 'Your donation has been received successfully.',
+      swal_success_msg:
+        'Thank you! Your donation details have been received. They will be confirmed after we verify the Transaction ID.',
       swal_err_title2: 'Sorry!',
       swal_err_msg: 'Please fill all information correctly.',
       swal_server_err: 'Server Error!',
@@ -739,7 +740,8 @@ const resources = {
       swal_processing: 'প্রক্রিয়াকরণ হচ্ছে...',
       swal_wait: 'অনুগ্রহ করে অপেক্ষা করুন',
       swal_success_title2: 'আলহামদুলিল্লাহ!',
-      swal_success_msg: 'আপনার অনুদান সফলভাবে গ্রহণ করা হয়েছে।',
+      swal_success_msg:
+        'ধন্যবাদ! আপনার অনুদানের তথ্য আমরা পেয়েছি। Transaction ID যাচাই করার পর এটি নিশ্চিত করা হবে।',
       swal_err_title2: 'দুঃখিত!',
       swal_err_msg: 'দয়া করে সবগুলো তথ্য সঠিকভাবে পূরণ করুন।',
       swal_server_err: 'সার্ভার এরর!',
