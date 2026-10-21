@@ -12,6 +12,7 @@ import Contact from './pages/Contact';
 import About from './pages/About'; 
 import Volunteer from './pages/Volunteer';
 import FundDetails from './pages/FundDetails';
+import PaymentResult from './pages/PaymentResult';
 import Activities from './pages/Activities';
 import Gallery from './pages/Gallery';
 import Blogs from './pages/Blogs'; // সাধারণ ইউজারদের জন্য ব্লগ পেজ
@@ -59,6 +60,7 @@ function App() {
             <Route path="/about" element={<About />} />
             <Route path="/volunteer" element={<Volunteer />} />
             <Route path="/fund/:fundName" element={<FundDetails />} />
+            <Route path="/donation/result" element={<PaymentResult />} />
             <Route path="/activities" element={<Activities />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/blogs" element={<Blogs />} /> 

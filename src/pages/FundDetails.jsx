@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -39,6 +39,26 @@ const FundDetails = () => {
     const [emailOrPhone, setEmailOrPhone] = useState('');
     const [transactionId, setTransactionId] = useState(''); // নতুন ট্রানজেকশন আইডি স্টেট
 
+    // Online payment (SSLCommerz): সার্ভারে চালু থাকলে তবেই অপশন দেখাবে।
+    // Sandbox (test) অবস্থায় শুধু ?paytest=1 দিয়ে খুললে দেখাবে, যাতে সাধারণ দর্শক test-এ টাকা না দেন।
+    const [onlineInfo, setOnlineInfo] = useState({ enabled: false, live: false });
+    const [payMode, setPayMode] = useState('manual'); // 'online' | 'manual'
+    const isPayTest = new URLSearchParams(window.location.search).get('paytest') === '1';
+    const onlineAvailable = onlineInfo.enabled && (onlineInfo.live || isPayTest);
+    const isOnline = onlineAvailable && payMode === 'online';
+
+    useEffect(() => {
+        let active = true;
+        axios.get(`${API_URL}/api/payment/config`)
+            .then((res) => {
+                if (!active || !res.data?.enabled) return;
+                setOnlineInfo({ enabled: true, live: Boolean(res.data.live) });
+                if (res.data.live || isPayTest) setPayMode('online');
+            })
+            .catch(() => { /* online payment বন্ধ থাকলে শুধু TrxID পদ্ধতি থাকবে */ });
+        return () => { active = false; };
+    }, [isPayTest]);
+
     const [copiedText, setCopiedText] = useState('');
 
     const [cash, setCash] = useState('');
@@ -60,8 +80,49 @@ const FundDetails = () => {
         setTimeout(() => setCopiedText(''), 3000);
     };
 
+    const handleOnlinePay = async () => {
+        if (Number(amount) < 10) {
+            Swal.fire({ icon: 'warning', title: t('swal_err_title2'), text: t('pay_min_amount'), confirmButtonColor: '#006a4e' });
+            return;
+        }
+        try {
+            Swal.fire({
+                title: t('pay_redirecting'),
+                text: t('swal_wait'),
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            const response = await axios.post(`${API_URL}/api/payment/init`, {
+                donor_name: name,
+                contact: emailOrPhone,
+                amount: amount,
+                fund_name: currentFund.title,
+            });
+            const url = response.data?.url || '';
+            // শুধু SSLCommerz-এর ঠিকানায় পাঠানো হবে
+            if (response.data?.success && /^https:\/\/([a-z0-9-]+\.)*sslcommerz\.com\//i.test(url)) {
+                window.location.href = url;
+            } else {
+                throw new Error('Invalid gateway URL');
+            }
+        } catch (error) {
+            console.error('Payment Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: t('swal_err_title2'),
+                text: error.response?.data?.message || t('pay_gateway_error'),
+                confirmButtonColor: '#d33'
+            });
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (isOnline) {
+            await handleOnlinePay();
+            return;
+        }
 
         // Node.js ব্যাকএন্ডের জন্য ডাটা সাজানো
         const donationData = {
@@ -217,7 +278,25 @@ const FundDetails = () => {
                                     />
                                 </div>
 
-                                {isRegularDonation && (
+                                {onlineAvailable && (
+                                    <div className="mb-4">
+                                        <label className="form-label fw-bold">
+                                            {t('pay_mode_label')}
+                                            {!onlineInfo.live && <span className="badge bg-warning text-dark ms-2">TEST MODE</span>}
+                                        </label>
+                                        <div className="d-flex rounded-2 overflow-hidden border border-success">
+                                            <button type="button" className={`btn w-50 rounded-0 fw-bold py-2 ${payMode === 'online' ? 'btn-success' : 'btn-light text-success'}`} onClick={() => setPayMode('online')}>
+                                                <i className="fa-solid fa-credit-card me-1"></i> {t('pay_mode_online')}
+                                            </button>
+                                            <button type="button" className={`btn w-50 rounded-0 fw-bold py-2 ${payMode === 'manual' ? 'btn-success' : 'btn-light text-success'}`} onClick={() => setPayMode('manual')}>
+                                                <i className="fa-solid fa-receipt me-1"></i> {t('pay_mode_manual')}
+                                            </button>
+                                        </div>
+                                        {isOnline && <small className="text-muted mt-1 d-block">{t('pay_mode_online_hint')}</small>}
+                                    </div>
+                                )}
+
+                                {isRegularDonation && !isOnline && (
                                     <>
                                         <div className="mb-4">
                                             <label className="form-label fw-bold text-danger">{t('fd_payment_label', 'Payment Method')}</label>
@@ -229,7 +308,8 @@ const FundDetails = () => {
                                     </>
                                 )}
 
-                                {/* নতুন Transaction ID ইনপুট ফিল্ড */}
+                                {/* নতুন Transaction ID ইনপুট ফিল্ড (শুধু হাতে টাকা পাঠালে) */}
+                                {!isOnline && (
                                 <div className="mb-4">
                                     <label className="form-label fw-bold text-success">Transaction ID (TrxID) *</label>
                                     <input type="text" className="form-control py-2 border-success" required placeholder="উদাহরণ: 8XDF9WE..." 
@@ -237,9 +317,10 @@ const FundDetails = () => {
                                     />
                                     <small className="text-muted mt-1 d-block">টাকা পাঠানোর পর প্রাপ্ত TrxID টি এখানে লিখুন।</small>
                                 </div>
+                                )}
 
                                 <button type="submit" className="btn btn-success w-100 py-3 fw-bold fs-5 rounded-3 mt-2">
-                                    {t('fd_next_step')}
+                                    {isOnline ? t('pay_now_btn') : t('fd_next_step')}
                                 </button>
                             </form>
                         </div>

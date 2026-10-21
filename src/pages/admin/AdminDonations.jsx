@@ -8,12 +8,17 @@ const STATUS_STYLES = {
     pending: { label: 'Pending', className: 'bg-warning bg-opacity-25 text-dark' },
     verified: { label: 'Verified', className: 'bg-success bg-opacity-10 text-success' },
     rejected: { label: 'Rejected', className: 'bg-danger bg-opacity-10 text-danger' },
+    // Online (SSLCommerz) payment-এর অবস্থা
+    initiated: { label: 'Not completed', className: 'bg-secondary bg-opacity-10 text-secondary' },
+    failed: { label: 'Failed', className: 'bg-danger bg-opacity-10 text-danger' },
+    cancelled: { label: 'Cancelled', className: 'bg-secondary bg-opacity-10 text-secondary' },
 };
 
 const FILTERS = [
     { value: 'pending', label: 'Pending' },
     { value: 'verified', label: 'Verified' },
     { value: 'rejected', label: 'Rejected' },
+    { value: 'failed', label: 'Online failed' },
     { value: 'all', label: 'All' },
 ];
 
@@ -161,6 +166,9 @@ const AdminDonations = () => {
                                                     ৳ {Number(item.amount).toLocaleString()}
                                                 </td>
                                                 <td className="small text-muted">
+                                                    {item.payment_source === 'sslcommerz' && (
+                                                        <span className="badge bg-primary bg-opacity-10 text-primary me-1">Online</span>
+                                                    )}
                                                     {item.payment_method || 'N/A'} <br />
                                                     <span className="fw-semibold text-dark" style={{ fontSize: '0.85em' }}>
                                                         {item.transaction_id || '-'}
@@ -170,9 +178,12 @@ const AdminDonations = () => {
                                                     <span className={`badge px-3 py-2 rounded-pill ${style.className}`}>
                                                         {style.label}
                                                     </span>
+                                                    {item.gateway_status === 'RISKY' && (
+                                                        <div className="small text-danger mt-1">Gateway flagged: check before verifying</div>
+                                                    )}
                                                 </td>
                                                 <td className="text-end px-4 text-nowrap">
-                                                    {status !== 'verified' && (
+                                                    {!['initiated', 'failed', 'cancelled'].includes(status) && status !== 'verified' && (
                                                         <button
                                                             className="btn btn-sm btn-success me-1"
                                                             disabled={busy}
@@ -181,7 +192,7 @@ const AdminDonations = () => {
                                                             <i className="fa-solid fa-check me-1"></i>Verify
                                                         </button>
                                                     )}
-                                                    {status !== 'rejected' && (
+                                                    {!['initiated', 'failed', 'cancelled', 'rejected'].includes(status) && (
                                                         <button
                                                             className="btn btn-sm btn-outline-danger me-1"
                                                             disabled={busy}
@@ -190,7 +201,7 @@ const AdminDonations = () => {
                                                             <i className="fa-solid fa-xmark me-1"></i>Reject
                                                         </button>
                                                     )}
-                                                    {status !== 'pending' && (
+                                                    {['verified', 'rejected'].includes(status) && (
                                                         <button
                                                             className="btn btn-sm btn-outline-secondary"
                                                             disabled={busy}
