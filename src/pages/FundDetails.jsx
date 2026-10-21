@@ -4,14 +4,49 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { useTranslation } from 'react-i18next';
 import { API_URL } from '../config';
+import './FundDetails.css';
+
+// ------------------------------------------------------------
+// সংস্থার পেমেন্ট তথ্য (হাতে টাকা পাঠানোর জন্য)
+// ------------------------------------------------------------
+const MOBILE_NUMBER = '01713990042';
+const BANK = {
+    bank: 'Shahjalal Islami Bank PLC',
+    name: 'AN-NAS Welfare Foundation',
+    account: '401913100000201',
+    branch: 'Pragati Sarani Branch',
+    routing: '19026718',
+    swift: 'SJBLBDDH',
+};
+
+// প্রতিটা ফান্ডের জন্য দ্রুত বেছে নেওয়ার পরিমাণ
+const PRESETS = {
+    zakat: [1000, 2500, 5000, 10000, 25000, 50000],
+    general: [300, 500, 1000, 2000, 3000, 5000],
+    general_daily: [10, 20, 30, 50, 100, 200],
+    iftar: [100, 300, 500, 1000, 2000, 5000],
+    default: [500, 1000, 2000, 5000, 10000, 25000],
+};
+
+const ONLINE_MIN = 10;      // SSLCommerz-এর সর্বনিম্ন
+const ONLINE_MAX = 500000;  // SSLCommerz-এর সর্বোচ্চ (এক লেনদেনে)
+
+const isValidContact = (value) => {
+    const v = value.trim();
+    if (v.includes('@')) return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+    const digits = v.replace(/[\s-]/g, '');
+    return /^(\+?88)?01[3-9]\d{8}$/.test(digits);
+};
+
+const formatTaka = (value) => Number(value || 0).toLocaleString('en-IN');
 
 const FundDetails = () => {
-    const { t } = useTranslation();
-    const { fundName } = useParams(); 
+    const { t, i18n } = useTranslation();
+    const { fundName } = useParams();
 
     // ডাটাবেস থেকে ট্রান্সলেশন অনুযায়ী ডাটা নেওয়া হলো
     const fundsData = t('funds_data', { returnObjects: true });
-    
+
     // ভিডিওগুলোর লিস্ট
     const fundVideos = {
         zakat: 'https://www.youtube.com/embed/-zhcl889KJ8?',
@@ -26,18 +61,25 @@ const FundDetails = () => {
         medical: 'https://www.youtube.com/embed/XXXXX'
     };
 
-    const currentFund = fundsData[fundName] || fundsData['zakat'];
-    const currentVideo = fundVideos[fundName] || fundVideos['zakat'];
-    
-    const isRegularDonation = fundName === 'general';
-    const isZakat = fundName === 'zakat';
+    const fundKey = fundsData[fundName] ? fundName : 'zakat';
+    const currentFund = fundsData[fundKey];
+    // আসল ভিডিও না থাকলে (XXXXX) ভিডিওর জায়গা দেখানো হবে না
+    const currentVideo = fundVideos[fundKey]?.includes('XXXXX') ? null : fundVideos[fundKey];
+
+    // Database-এ সবসময় ইংরেজি নাম রাখা হয়, যাতে বাংলা/ইংরেজি দুই ভাষার দান একই ফান্ডে গোনা হয়
+    const fundTitleEn = i18n.getFixedT('en')('funds_data', { returnObjects: true })?.[fundKey]?.title || currentFund.title;
+
+    const isRegularDonation = fundKey === 'general';
+    const isZakat = fundKey === 'zakat';
 
     const [amount, setAmount] = useState('');
     const [frequency, setFrequency] = useState('monthly');
-    const [paymentMethod, setPaymentMethod] = useState('bkash');
+    const [manualMethod, setManualMethod] = useState('bkash'); // 'bkash' | 'nagad' | 'bank'
     const [name, setName] = useState('');
     const [emailOrPhone, setEmailOrPhone] = useState('');
-    const [transactionId, setTransactionId] = useState(''); // নতুন ট্রানজেকশন আইডি স্টেট
+    const [transactionId, setTransactionId] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [errors, setErrors] = useState({});
 
     // Online payment (SSLCommerz): সার্ভারে চালু থাকলে তবেই অপশন দেখাবে।
     // Sandbox (test) অবস্থায় শুধু ?paytest=1 দিয়ে খুললে দেখাবে, যাতে সাধারণ দর্শক test-এ টাকা না দেন।
@@ -55,9 +97,15 @@ const FundDetails = () => {
                 setOnlineInfo({ enabled: true, live: Boolean(res.data.live) });
                 if (res.data.live || isPayTest) setPayMode('online');
             })
-            .catch(() => { /* online payment বন্ধ থাকলে শুধু TrxID পদ্ধতি থাকবে */ });
+            .catch(() => { /* online payment বন্ধ থাকলে শুধু হাতে পাঠানোর পদ্ধতি থাকবে */ });
         return () => { active = false; };
     }, [isPayTest]);
+
+    // অন্য ফান্ডে গেলে ফর্ম নতুন করে শুরু
+    useEffect(() => {
+        setAmount('');
+        setErrors({});
+    }, [fundKey]);
 
     const [copiedText, setCopiedText] = useState('');
 
@@ -71,40 +119,55 @@ const FundDetails = () => {
     const totalAssets = (Number(cash) || 0) + (Number(goldSilver) || 0) + (Number(investments) || 0) + (Number(businessStock) || 0) + (Number(receivables) || 0);
     const netWealth = totalAssets - (Number(debts) || 0);
     const calculatedZakat = netWealth > 0 ? (netWealth * 0.025).toFixed(0) : 0;
-    
-    const handleAmountClick = (value) => { setAmount(value); };
+
+    const presets = isRegularDonation
+        ? (frequency === 'daily' ? PRESETS.general_daily : PRESETS.general)
+        : (PRESETS[fundKey] || PRESETS.default);
+
+    const numericAmount = Number(amount) || 0;
 
     const handleCopy = (text, type) => {
-        navigator.clipboard.writeText(text);
+        navigator.clipboard?.writeText(text);
         setCopiedText(type);
-        setTimeout(() => setCopiedText(''), 3000);
+        setTimeout(() => setCopiedText(''), 2500);
+    };
+
+    const clearError = (field) => setErrors((prev) => ({ ...prev, [field]: undefined }));
+
+    const validate = () => {
+        const next = {};
+        if (!numericAmount || numericAmount <= 0) next.amount = t('fdx_err_amount');
+        else if (isOnline && numericAmount < ONLINE_MIN) next.amount = t('pay_min_amount');
+        else if (isOnline && numericAmount > ONLINE_MAX) next.amount = t('fdx_err_amount_max');
+        if (!name.trim()) next.name = t('fdx_err_name');
+        if (!isValidContact(emailOrPhone)) next.contact = t('fdx_err_contact');
+        if (!isOnline && transactionId.trim().length < 4) next.trx = t('fdx_err_trx');
+        setErrors(next);
+        return Object.keys(next).length === 0;
     };
 
     const handleOnlinePay = async () => {
-        if (Number(amount) < 10) {
-            Swal.fire({ icon: 'warning', title: t('swal_err_title2'), text: t('pay_min_amount'), confirmButtonColor: '#006a4e' });
-            return;
-        }
+        setSubmitting(true);
+        Swal.fire({
+            title: t('pay_redirecting'),
+            text: t('swal_wait'),
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
         try {
-            Swal.fire({
-                title: t('pay_redirecting'),
-                text: t('swal_wait'),
-                allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
-            });
             const response = await axios.post(`${API_URL}/api/payment/init`, {
-                donor_name: name,
-                contact: emailOrPhone,
-                amount: amount,
-                fund_name: currentFund.title,
+                donor_name: name.trim(),
+                contact: emailOrPhone.trim(),
+                amount: numericAmount,
+                fund_name: fundTitleEn,
             });
             const url = response.data?.url || '';
             // শুধু SSLCommerz-এর ঠিকানায় পাঠানো হবে
             if (response.data?.success && /^https:\/\/([a-z0-9-]+\.)*sslcommerz\.com\//i.test(url)) {
                 window.location.href = url;
-            } else {
-                throw new Error('Invalid gateway URL');
+                return; // পেজ বদলে যাচ্ছে, তাই submitting চালু থাকুক
             }
+            throw new Error('Invalid gateway URL');
         } catch (error) {
             console.error('Payment Error:', error);
             Swal.fire({
@@ -113,41 +176,31 @@ const FundDetails = () => {
                 text: error.response?.data?.message || t('pay_gateway_error'),
                 confirmButtonColor: '#d33'
             });
+            setSubmitting(false);
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        if (isOnline) {
-            await handleOnlinePay();
-            return;
-        }
-
-        // Node.js ব্যাকএন্ডের জন্য ডাটা সাজানো
+    const handleManualSubmit = async () => {
+        const methodLabel = { bkash: 'bKash', nagad: 'Nagad', bank: 'Bank Transfer' }[manualMethod];
         const donationData = {
-            donor_name: name,
-            phone: emailOrPhone, // Contact হিসেবে ফোন নাম্বার পাঠানো হচ্ছে
-            email: '', // চাইলে ইমেইল ফিল্ড যোগ করতে পারেন
-            amount: amount,
-            fund_name: currentFund.title, // ডাটাবেসে ফান্ডের সুন্দর নামটি সেভ হবে
-            payment_method: isRegularDonation ? paymentMethod : 'Bank Transfer',
-            transaction_id: transactionId
+            donor_name: name.trim(),
+            phone: emailOrPhone.trim(),
+            email: emailOrPhone.includes('@') ? emailOrPhone.trim() : '',
+            amount: numericAmount,
+            fund_name: fundTitleEn,
+            payment_method: methodLabel,
+            transaction_id: transactionId.trim(),
         };
 
+        setSubmitting(true);
+        Swal.fire({
+            title: t('swal_processing'),
+            text: t('swal_wait'),
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
         try {
-            Swal.fire({
-                title: t('swal_processing'),
-                text: t('swal_wait'),
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
-            // Node.js এর নতুন API তে রিকোয়েস্ট পাঠানো
             const response = await axios.post(`${API_URL}/api/donations/submit`, donationData);
-
             if (response.data.success) {
                 Swal.fire({
                     icon: 'success',
@@ -155,12 +208,11 @@ const FundDetails = () => {
                     text: t('swal_success_msg'),
                     confirmButtonColor: '#006a4e'
                 });
-                
-                // ফর্ম ক্লিয়ার করা
                 setAmount('');
                 setName('');
                 setEmailOrPhone('');
                 setTransactionId('');
+                setErrors({});
             }
         } catch (error) {
             console.error('API Error:', error);
@@ -170,17 +222,31 @@ const FundDetails = () => {
                 text: error.response?.data?.message || t('swal_err_msg'),
                 confirmButtonColor: '#d33'
             });
+        } finally {
+            setSubmitting(false);
         }
     };
-    
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (submitting || !validate()) return;
+        if (isOnline) await handleOnlinePay();
+        else await handleManualSubmit();
+    };
+
     const applyZakatAmount = () => {
         if(calculatedZakat > 0) {
             setAmount(calculatedZakat);
+            clearError('amount');
             const modalElement = document.getElementById('zakatCalculatorModal');
-            const modalInstance = window.bootstrap.Modal.getInstance(modalElement);
+            const modalInstance = window.bootstrap?.Modal.getInstance(modalElement);
             if (modalInstance) modalInstance.hide();
         }
     };
+
+    const submitLabel = numericAmount > 0
+        ? (isOnline ? t('fdx_btn_pay', { amount: formatTaka(numericAmount) }) : t('fdx_btn_submit', { amount: formatTaka(numericAmount) }))
+        : (isOnline ? t('pay_now_btn') : t('fdx_btn_submit_plain'));
 
     return (
         <main className="bg-white pb-5">
@@ -190,10 +256,11 @@ const FundDetails = () => {
             </div>
 
             <div className="container">
-                <div className="row g-5">
+                <div className="row g-4 g-lg-5">
                     
                     {/* Left Column */}
-                    <div className="col-lg-7">
+                    <div className="col-lg-7 order-last order-lg-first">
+                        {currentVideo && (
                         <div className="ratio ratio-16x9 mb-4 rounded-4 overflow-hidden shadow-sm border">
                             <iframe 
                                 src={currentVideo} 
@@ -201,6 +268,7 @@ const FundDetails = () => {
                                 allowFullScreen>
                             </iframe>
                         </div>
+                        )}
 
                         <div className="p-4 rounded-4 mb-4 text-center" style={{ backgroundColor: '#eefcf5', border: '1px solid #d1f0e1' }}>
                             <p className="fw-bold theme-text fs-5 mb-2">{currentFund.quote}</p>
@@ -227,152 +295,183 @@ const FundDetails = () => {
                     </div>
 
                     {/* Right Column (Donation Form) */}
-                    <div className="col-lg-5">
-                        <div className="p-4 rounded-top-4 text-white text-center" style={{ backgroundColor: '#008b65' }}>
-                            <h4 className="fw-bold mb-2">{currentFund.ctaTitle}</h4>
-                            <p className="mb-0" style={{ fontSize: '0.9rem', opacity: '0.9' }}>{currentFund.ctaDesc}</p>
-                            
-                            {isZakat && (
-                                <button className="btn btn-light text-success fw-bold rounded-pill px-4 py-2 mt-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#zakatCalculatorModal">
-                                    <i className="fa-solid fa-calculator me-2"></i> {t('fd_btn_zakat_calc')}
-                                </button>
-                            )}
-                        </div>
+                    <div className="col-lg-5 order-first order-lg-last">
+                        <div className="fdx-card shadow-sm mb-4">
+                            <div className="fdx-head text-white text-center">
+                                <h4 className="fw-bold mb-1">{currentFund.ctaTitle}</h4>
+                                <p className="mb-0 small" style={{ opacity: 0.9 }}>{currentFund.ctaDesc}</p>
+                                {isZakat && (
+                                    <button type="button" className="btn btn-light btn-sm text-success fw-bold rounded-pill px-3 mt-3" data-bs-toggle="modal" data-bs-target="#zakatCalculatorModal">
+                                        <i className="fa-solid fa-calculator me-2"></i>{t('fd_btn_zakat_calc')}
+                                    </button>
+                                )}
+                            </div>
 
-                        <div className="p-4 border border-top-0 rounded-bottom-4 shadow-sm mb-4 bg-white">
-                            <form onSubmit={handleSubmit}>
+                            <form className="p-3 p-md-4" onSubmit={handleSubmit} noValidate>
+                                {/* ধাপ ১: পরিমাণ */}
+                                <div className="fdx-step-title"><span>1</span>{t('fdx_step_amount')}</div>
+
                                 {isRegularDonation && (
-                                    <div className="d-flex mb-4 rounded-2 overflow-hidden border border-success">
-                                        <button type="button" className={`btn w-50 rounded-0 fw-bold py-2 ${frequency === 'daily' ? 'btn-success' : 'btn-light text-success'}`} onClick={() => setFrequency('daily')}>{t('fd_freq_daily')}</button>
-                                        <button type="button" className={`btn w-50 rounded-0 fw-bold py-2 ${frequency === 'monthly' ? 'btn-success' : 'btn-light text-success'}`} onClick={() => setFrequency('monthly')}>{t('fd_freq_monthly')}</button>
+                                    <div className="fdx-segment mb-3" role="group">
+                                        {['daily', 'monthly'].map((f) => (
+                                            <button key={f} type="button" className={frequency === f ? 'active' : ''} onClick={() => { setFrequency(f); setAmount(''); }}>
+                                                {t(f === 'daily' ? 'fd_freq_daily' : 'fd_freq_monthly')}
+                                            </button>
+                                        ))}
                                     </div>
                                 )}
 
-                                <div className="row g-2 mb-3">
-                                    {(isRegularDonation ? ['100', '50', '30', '20', '10'] : ['50000', '10000', '5000', '1000', '100']).map((val) => (
+                                <div className="row g-2 mb-2">
+                                    {presets.map((val) => (
                                         <div className="col-4" key={val}>
-                                            <button type="button" className={`btn w-100 fw-bold py-2 ${amount === val ? 'btn-success' : 'btn-outline-success'}`} onClick={() => handleAmountClick(val)}>৳ {val}</button>
+                                            <button
+                                                type="button"
+                                                className={`fdx-chip w-100 ${numericAmount === val ? 'active' : ''}`}
+                                                onClick={() => { setAmount(String(val)); clearError('amount'); }}
+                                            >
+                                                ৳ {formatTaka(val)}
+                                            </button>
                                         </div>
                                     ))}
-                                    <div className="col-4">
-                                        <button type="button" className="btn btn-outline-success w-100 fw-bold py-2" style={{ fontSize: "0.85rem" }} onClick={() => setAmount('')}>{t('fd_other_amount')}</button>
-                                    </div>
                                 </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label fw-bold">{t('fd_amount_label')}</label>
-                                    <input type="number" className="form-control bg-light py-2" value={amount} onChange={(e) => setAmount(e.target.value)} required placeholder={t('fd_amount_ph')} />
-                                </div>
-
-                                <div className="mb-3">
-                                    <label className="form-label fw-bold">{t('fd_name_label')}</label>
-                                    <input type="text" className="form-control py-2" placeholder={t('fd_name_ph')} 
-                                        value={name} onChange={(e) => setName(e.target.value)} required
+                                <div className={`fdx-amount ${errors.amount ? 'is-invalid' : ''}`}>
+                                    <span>৳</span>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        min="1"
+                                        value={amount}
+                                        onChange={(e) => { setAmount(e.target.value); clearError('amount'); }}
+                                        placeholder={t('fdx_amount_custom')}
+                                        aria-label={t('fd_amount_label')}
                                     />
                                 </div>
+                                {errors.amount && <div className="fdx-error">{errors.amount}</div>}
 
+                                {/* ধাপ ২: দাতার তথ্য */}
+                                <div className="fdx-step-title mt-4"><span>2</span>{t('fdx_step_details')}</div>
                                 <div className="mb-3">
-                                    <label className="form-label fw-bold">{t('fd_contact_label')}</label>
-                                    <input type="text" className="form-control py-2" required placeholder={t('fd_contact_ph')} 
-                                        value={emailOrPhone} onChange={(e) => setEmailOrPhone(e.target.value)} 
-                                    />
+                                    <label className="form-label small fw-semibold mb-1" htmlFor="fdx-name">{t('fd_name_label')} *</label>
+                                    <input id="fdx-name" type="text" className={`form-control fdx-input ${errors.name ? 'is-invalid' : ''}`} placeholder={t('fdx_name_ph')}
+                                        value={name} maxLength={100} autoComplete="name"
+                                        onChange={(e) => { setName(e.target.value); clearError('name'); }} />
+                                    {errors.name && <div className="fdx-error">{errors.name}</div>}
+                                </div>
+                                <div className="mb-1">
+                                    <label className="form-label small fw-semibold mb-1" htmlFor="fdx-contact">{t('fd_contact_label')}</label>
+                                    <input id="fdx-contact" type="text" className={`form-control fdx-input ${errors.contact ? 'is-invalid' : ''}`} placeholder={t('fdx_contact_ph')}
+                                        value={emailOrPhone} maxLength={150} autoComplete="tel"
+                                        onChange={(e) => { setEmailOrPhone(e.target.value); clearError('contact'); }} />
+                                    {errors.contact ? <div className="fdx-error">{errors.contact}</div> : <div className="form-text small">{t('fdx_contact_hint')}</div>}
+                                </div>
+
+                                {/* ধাপ ৩: পেমেন্ট পদ্ধতি */}
+                                <div className="fdx-step-title mt-4">
+                                    <span>3</span>{t('fdx_step_payment')}
+                                    {onlineAvailable && !onlineInfo.live && <span className="badge bg-warning text-dark ms-2">TEST MODE</span>}
                                 </div>
 
                                 {onlineAvailable && (
-                                    <div className="mb-4">
-                                        <label className="form-label fw-bold">
-                                            {t('pay_mode_label')}
-                                            {!onlineInfo.live && <span className="badge bg-warning text-dark ms-2">TEST MODE</span>}
-                                        </label>
-                                        <div className="d-flex rounded-2 overflow-hidden border border-success">
-                                            <button type="button" className={`btn w-50 rounded-0 fw-bold py-2 ${payMode === 'online' ? 'btn-success' : 'btn-light text-success'}`} onClick={() => setPayMode('online')}>
-                                                <i className="fa-solid fa-credit-card me-1"></i> {t('pay_mode_online')}
-                                            </button>
-                                            <button type="button" className={`btn w-50 rounded-0 fw-bold py-2 ${payMode === 'manual' ? 'btn-success' : 'btn-light text-success'}`} onClick={() => setPayMode('manual')}>
-                                                <i className="fa-solid fa-receipt me-1"></i> {t('pay_mode_manual')}
+                                    <div className="row g-2 mb-3">
+                                        <div className="col-6">
+                                            <button type="button" className={`fdx-option w-100 ${payMode === 'online' ? 'active' : ''}`} onClick={() => { setPayMode('online'); clearError('trx'); }}>
+                                                <i className="fa-solid fa-bolt"></i>
+                                                <strong>{t('pay_mode_online')}</strong>
+                                                <small>{t('fdx_online_sub')}</small>
                                             </button>
                                         </div>
-                                        {isOnline && <small className="text-muted mt-1 d-block">{t('pay_mode_online_hint')}</small>}
+                                        <div className="col-6">
+                                            <button type="button" className={`fdx-option w-100 ${payMode === 'manual' ? 'active' : ''}`} onClick={() => setPayMode('manual')}>
+                                                <i className="fa-solid fa-receipt"></i>
+                                                <strong>{t('fdx_manual_title')}</strong>
+                                                <small>{t('fdx_manual_sub')}</small>
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
 
-                                {isRegularDonation && !isOnline && (
-                                    <>
-                                        <div className="mb-4">
-                                            <label className="form-label fw-bold text-danger">{t('fd_payment_label', 'Payment Method')}</label>
-                                            <div className="d-flex gap-3 align-items-center p-3 border rounded-3 bg-light">
-                                                <div className="form-check"><input className="form-check-input" type="radio" name="payment" id="bkash" checked={paymentMethod === 'bkash'} onChange={() => setPaymentMethod('bkash')} /><label className="form-check-label fw-bold" style={{ color: '#e2136e' }} htmlFor="bkash">bKash</label></div>
-                                                <div className="form-check"><input className="form-check-input" type="radio" name="payment" id="nagad" checked={paymentMethod === 'nagad'} onChange={() => setPaymentMethod('nagad')} /><label className="form-check-label fw-bold" style={{ color: '#f7931e' }} htmlFor="nagad">Nagad</label></div>
-                                            </div>
+                                {isOnline ? (
+                                    <div className="fdx-panel">
+                                        <div className="d-flex flex-wrap gap-1 mb-2">
+                                            {['bKash', 'Nagad', 'Rocket', 'Upay', 'VISA', 'Mastercard', 'AMEX', 'Net Banking'].map((m) => (
+                                                <span key={m} className="fdx-badge">{m}</span>
+                                            ))}
                                         </div>
-                                    </>
+                                        <p className="small text-muted mb-0">
+                                            <i className="fa-solid fa-circle-info me-1 text-success"></i>{t('fdx_online_info')}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="fdx-panel">
+                                        <div className="fdx-segment fdx-segment-3 mb-3" role="group">
+                                            {[['bkash', 'bKash'], ['nagad', 'Nagad'], ['bank', t('fdx_bank_short')]].map(([key, label]) => (
+                                                <button key={key} type="button" className={manualMethod === key ? 'active' : ''} onClick={() => setManualMethod(key)}>{label}</button>
+                                            ))}
+                                        </div>
+
+                                        {manualMethod === 'bank' ? (
+                                            <ul className="list-unstyled small mb-3 fdx-bank">
+                                                <li><span>{t('fd_bank')}</span><b>{BANK.bank}</b></li>
+                                                <li><span>{t('fd_acc_name')}</span><b>{BANK.name}</b></li>
+                                                <li>
+                                                    <span>{t('fd_acc_no')}</span>
+                                                    <b>
+                                                        {BANK.account}
+                                                        <button type="button" className="fdx-copy ms-2" onClick={() => handleCopy(BANK.account, 'acc')}>
+                                                            {copiedText === 'acc' ? t('fd_copied') : t('fd_copy')}
+                                                        </button>
+                                                    </b>
+                                                </li>
+                                                <li><span>{t('fd_branch')}</span><b>{BANK.branch}</b></li>
+                                                <li><span>Routing:</span><b>{BANK.routing}</b></li>
+                                                <li><span>SWIFT:</span><b>{BANK.swift}</b></li>
+                                            </ul>
+                                        ) : (
+                                            <div className="fdx-number mb-3">
+                                                <div>
+                                                    <small className="text-muted d-block">{t('fdx_send_money_to', { method: manualMethod === 'bkash' ? 'bKash' : 'Nagad' })}</small>
+                                                    <strong className="fs-5">{MOBILE_NUMBER}</strong>
+                                                </div>
+                                                <button type="button" className="fdx-copy" onClick={() => handleCopy(MOBILE_NUMBER, 'mobile')}>
+                                                    <i className="fa-regular fa-copy me-1"></i>{copiedText === 'mobile' ? t('fd_copied') : t('fd_copy')}
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        <ol className="small text-muted ps-3 mb-3">
+                                            <li>{t(manualMethod === 'bank' ? 'fdx_manual_step1_bank' : 'fdx_manual_step1', { amount: numericAmount > 0 ? `৳ ${formatTaka(numericAmount)}` : t('fdx_the_amount') })}</li>
+                                            <li>{t('fdx_manual_step2')}</li>
+                                        </ol>
+
+                                        <label className="form-label small fw-semibold mb-1" htmlFor="fdx-trx">{t('fdx_trx_label')}</label>
+                                        <input id="fdx-trx" type="text" className={`form-control fdx-input ${errors.trx ? 'is-invalid' : ''}`} placeholder={t('fdx_trx_ph')}
+                                            value={transactionId} maxLength={100} autoComplete="off"
+                                            onChange={(e) => { setTransactionId(e.target.value); clearError('trx'); }} />
+                                        {errors.trx && <div className="fdx-error">{errors.trx}</div>}
+                                    </div>
                                 )}
 
-                                {/* নতুন Transaction ID ইনপুট ফিল্ড (শুধু হাতে টাকা পাঠালে) */}
-                                {!isOnline && (
-                                <div className="mb-4">
-                                    <label className="form-label fw-bold text-success">Transaction ID (TrxID) *</label>
-                                    <input type="text" className="form-control py-2 border-success" required placeholder="উদাহরণ: 8XDF9WE..." 
-                                        value={transactionId} onChange={(e) => setTransactionId(e.target.value)} 
-                                    />
-                                    <small className="text-muted mt-1 d-block">টাকা পাঠানোর পর প্রাপ্ত TrxID টি এখানে লিখুন।</small>
-                                </div>
+                                {numericAmount > 0 && (
+                                    <div className="fdx-summary mt-3">
+                                        <span>{currentFund.title}</span>
+                                        <strong>৳ {formatTaka(numericAmount)}</strong>
+                                    </div>
                                 )}
 
-                                <button type="submit" className="btn btn-success w-100 py-3 fw-bold fs-5 rounded-3 mt-2">
-                                    {isOnline ? t('pay_now_btn') : t('fd_next_step')}
+                                <button type="submit" className="btn fdx-submit w-100 mt-3" disabled={submitting}>
+                                    {submitting
+                                        ? <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        : <i className={`fa-solid ${isOnline ? 'fa-lock' : 'fa-paper-plane'} me-2`}></i>}
+                                    {submitLabel}
                                 </button>
+
+                                <div className="fdx-trust mt-3">
+                                    <span><i className="fa-solid fa-shield-halved"></i>{isOnline ? t('fdx_trust_ssl') : t('fdx_trust_verify')}</span>
+                                    <span><i className="fa-solid fa-building-ngo"></i>{t('fdx_trust_ngo')}</span>
+                                </div>
                             </form>
                         </div>
-
-                        {/* Payment Methods */}
-                        <div className="card border-0 shadow-sm rounded-4 mb-4">
-                            <div className="card-header bg-white border-bottom-0 pt-4 pb-0">
-                                <h5 className="fw-bold text-dark" style={{ borderLeft: '4px solid #006a4e', paddingLeft: '10px' }}>{t('fd_pay_methods_title')}</h5>
-                            </div>
-                            <div className="card-body p-4">
-                                <div className="mb-4">
-                                    <p className="fw-bold text-danger mb-2"><i className="fa-solid fa-mobile-screen-button me-2"></i>{t('fd_mobile_banking')}</p>
-                                    <div className="p-3 bg-light rounded-3 border d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <span className="badge bg-danger me-1">bKash</span>
-                                            <span className="badge bg-warning text-dark">Nagad</span>
-                                            <h6 className="fw-bold mb-0 mt-2 text-dark">01713990042</h6>
-                                        </div>
-                                        <button 
-                                            onClick={() => handleCopy('01713990042', 'Mobile')}
-                                            className="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold"
-                                        >
-                                            {copiedText === 'Mobile' ? t('fd_copied') : t('fd_copy')}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <p className="fw-bold text-success mb-2"><i className="fa-solid fa-building-columns me-2"></i>{t('fd_bank_acc_title')}</p>
-                                    <div className="p-3 bg-light rounded-3 border">
-                                        <ul className="list-unstyled mb-0 small text-dark">
-                                            <li className="mb-1"><strong>{t('fd_bank')}</strong> Shahjalal Islami Bank PLC</li>
-                                            <li className="mb-1"><strong>{t('fd_acc_name')}</strong> AN-NAS Welfare Foundation</li>
-                                            <li className="mb-1 d-flex justify-content-between align-items-center">
-                                                <span><strong>{t('fd_acc_no')}</strong> 401913100000201</span>
-                                                <button 
-                                                    onClick={() => handleCopy('401913100000201', 'Account')}
-                                                    className="btn btn-sm btn-link text-success p-0 text-decoration-none fw-bold"
-                                                >
-                                                    {copiedText === 'Account' ? t('fd_copied') : t('fd_copy')}
-                                                </button>
-                                            </li>
-                                            <li className="mb-1"><strong>{t('fd_branch')}</strong> Pragati Sarani Branch</li>
-                                            <li className="mb-1"><strong>Routing:</strong> 19026718</li>
-                                            <li><strong>SWIFT:</strong> SJBLBDDH</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                
-                            </div>
-                        </div>
-
                     </div>
                 </div>
             </div>
