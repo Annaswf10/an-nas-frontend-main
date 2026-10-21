@@ -48,6 +48,9 @@ const resources = {
       service_disaster_title: 'Disaster Relief',
       service_disaster_desc:
         'Emergency response and relief materials during floods, storms, and disasters.',
+      service_poverty_title: 'Zero Poverty',
+      service_poverty_desc:
+        'Helping families become self-reliant through small business support, skills training, and livelihood assets.',
 
       funds_title: 'Donation Funds',
       funds_subtitle: "Let's bring a change together",
@@ -487,6 +490,9 @@ const resources = {
         'ক্ষুধার্তদের মাঝে পুষ্টিকর খাবার বিতরণ এবং রমজানে বিশেষ ইফতারের ব্যবস্থা।',
       service_disaster_title: 'দুর্যোগে ত্রাণ',
       service_disaster_desc: 'বন্যা, ঝড় ও যেকোনো দুর্যোগে জরুরি সহায়তা এবং ত্রাণ সামগ্রী বিতরণ।',
+      service_poverty_title: 'দারিদ্র্যমুক্ত সমাজ',
+      service_poverty_desc:
+        'ক্ষুদ্র ব্যবসার মূলধন, দক্ষতা প্রশিক্ষণ ও জীবিকার উপকরণ দিয়ে পরিবারগুলোকে স্বাবলম্বী করে তোলা।',
 
       funds_title: 'অনুদান তহবিল',
       funds_subtitle: 'আসুন একসাথে পরিবর্তন আনি',
