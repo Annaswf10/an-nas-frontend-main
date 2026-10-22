@@ -28,6 +28,16 @@ const PRESETS = {
     default: [500, 1000, 2000, 5000, 10000, 25000],
 };
 
+// Online পেমেন্টের পদ্ধতি (SSLCommerz-এর পেজে সরাসরি এটাই খুলবে)
+const ONLINE_METHODS = [
+    { key: 'bkash', logo: 'bKash', label: 'bKash', color: '#e2136e' },
+    { key: 'nagad', logo: 'Nagad', label: 'Nagad', color: '#ec1c24' },
+    { key: 'rocket', logo: 'Rocket', label: 'Rocket', color: '#8c3494' },
+    { key: 'card', icon: 'fa-regular fa-credit-card', labelKey: 'fdx_m_card', color: '#1a5fb4' },
+    { key: 'netbank', icon: 'fa-solid fa-building-columns', labelKey: 'fdx_m_netbank', color: '#006a4e' },
+    { key: 'all', icon: 'fa-solid fa-ellipsis', labelKey: 'fdx_m_other', color: '#6c7f77' },
+];
+
 const ONLINE_MIN = 10;      // SSLCommerz-এর সর্বনিম্ন
 const ONLINE_MAX = 500000;  // SSLCommerz-এর সর্বোচ্চ (এক লেনদেনে)
 
@@ -85,6 +95,7 @@ const FundDetails = () => {
     // Sandbox (test) অবস্থায় শুধু ?paytest=1 দিয়ে খুললে দেখাবে, যাতে সাধারণ দর্শক test-এ টাকা না দেন।
     const [onlineInfo, setOnlineInfo] = useState({ enabled: false, live: false });
     const [payMode, setPayMode] = useState('manual'); // 'online' | 'manual'
+    const [onlineMethod, setOnlineMethod] = useState('bkash');
     const isPayTest = new URLSearchParams(window.location.search).get('paytest') === '1';
     const onlineAvailable = onlineInfo.enabled && (onlineInfo.live || isPayTest);
     const isOnline = onlineAvailable && payMode === 'online';
@@ -160,6 +171,7 @@ const FundDetails = () => {
                 contact: emailOrPhone.trim(),
                 amount: numericAmount,
                 fund_name: fundTitleEn,
+                method: onlineMethod,
             });
             const url = response.data?.url || '';
             // শুধু SSLCommerz-এর ঠিকানায় পাঠানো হবে
@@ -244,8 +256,11 @@ const FundDetails = () => {
         }
     };
 
+    const selectedMethod = ONLINE_METHODS.find((m) => m.key === onlineMethod);
+    const methodLabel = selectedMethod?.key === 'all' ? 'SSLCommerz' : (selectedMethod?.label || t(selectedMethod?.labelKey || 'fdx_m_card'));
+
     const submitLabel = numericAmount > 0
-        ? (isOnline ? t('fdx_btn_pay', { amount: formatTaka(numericAmount) }) : t('fdx_btn_submit', { amount: formatTaka(numericAmount) }))
+        ? (isOnline ? t('fdx_btn_pay', { amount: formatTaka(numericAmount), method: methodLabel }) : t('fdx_btn_submit', { amount: formatTaka(numericAmount) }))
         : (isOnline ? t('pay_now_btn') : t('fdx_btn_submit_plain'));
 
     return (
@@ -367,89 +382,86 @@ const FundDetails = () => {
                                 </div>
 
                                 {/* ধাপ ৩: পেমেন্ট পদ্ধতি */}
-                                <div className="fdx-step-title mt-4">
-                                    <span>3</span>{t('fdx_step_payment')}
-                                    {onlineAvailable && !onlineInfo.live && <span className="badge bg-warning text-dark ms-2">TEST MODE</span>}
-                                </div>
-
-                                {onlineAvailable && (
-                                    <div className="row g-2 mb-3">
-                                        <div className="col-6">
-                                            <button type="button" className={`fdx-option w-100 ${payMode === 'online' ? 'active' : ''}`} onClick={() => { setPayMode('online'); clearError('trx'); }}>
-                                                <i className="fa-solid fa-bolt"></i>
-                                                <strong>{t('pay_mode_online')}</strong>
-                                                <small>{t('fdx_online_sub')}</small>
-                                            </button>
-                                        </div>
-                                        <div className="col-6">
-                                            <button type="button" className={`fdx-option w-100 ${payMode === 'manual' ? 'active' : ''}`} onClick={() => setPayMode('manual')}>
-                                                <i className="fa-solid fa-receipt"></i>
-                                                <strong>{t('fdx_manual_title')}</strong>
-                                                <small>{t('fdx_manual_sub')}</small>
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
                                 {isOnline ? (
-                                    <div className="fdx-panel">
-                                        <div className="d-flex flex-wrap gap-1 mb-2">
-                                            {['bKash', 'Nagad', 'Rocket', 'Upay', 'VISA', 'Mastercard', 'AMEX', 'Net Banking'].map((m) => (
-                                                <span key={m} className="fdx-badge">{m}</span>
-                                            ))}
+                                    <>
+                                        <div className="fdx-step-title mt-4">
+                                            <span>3</span>{t('fdx_select_method')}
+                                            {!onlineInfo.live && <span className="badge bg-warning text-dark ms-2">TEST MODE</span>}
                                         </div>
-                                        <p className="small text-muted mb-0">
-                                            <i className="fa-solid fa-circle-info me-1 text-success"></i>{t('fdx_online_info')}
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="fdx-panel">
-                                        <div className="fdx-segment fdx-segment-3 mb-3" role="group">
-                                            {[['bkash', 'bKash'], ['nagad', 'Nagad'], ['bank', t('fdx_bank_short')]].map(([key, label]) => (
-                                                <button key={key} type="button" className={manualMethod === key ? 'active' : ''} onClick={() => setManualMethod(key)}>{label}</button>
-                                            ))}
-                                        </div>
-
-                                        {manualMethod === 'bank' ? (
-                                            <ul className="list-unstyled small mb-3 fdx-bank">
-                                                <li><span>{t('fd_bank')}</span><b>{BANK.bank}</b></li>
-                                                <li><span>{t('fd_acc_name')}</span><b>{BANK.name}</b></li>
-                                                <li>
-                                                    <span>{t('fd_acc_no')}</span>
-                                                    <b>
-                                                        {BANK.account}
-                                                        <button type="button" className="fdx-copy ms-2" onClick={() => handleCopy(BANK.account, 'acc')}>
-                                                            {copiedText === 'acc' ? t('fd_copied') : t('fd_copy')}
-                                                        </button>
-                                                    </b>
-                                                </li>
-                                                <li><span>{t('fd_branch')}</span><b>{BANK.branch}</b></li>
-                                                <li><span>Routing:</span><b>{BANK.routing}</b></li>
-                                                <li><span>SWIFT:</span><b>{BANK.swift}</b></li>
-                                            </ul>
-                                        ) : (
-                                            <div className="fdx-number mb-3">
-                                                <div>
-                                                    <small className="text-muted d-block">{t('fdx_send_money_to', { method: manualMethod === 'bkash' ? 'bKash' : 'Nagad' })}</small>
-                                                    <strong className="fs-5">{MOBILE_NUMBER}</strong>
-                                                </div>
-                                                <button type="button" className="fdx-copy" onClick={() => handleCopy(MOBILE_NUMBER, 'mobile')}>
-                                                    <i className="fa-regular fa-copy me-1"></i>{copiedText === 'mobile' ? t('fd_copied') : t('fd_copy')}
+                                        <div className="fdx-methods" role="radiogroup">
+                                            {ONLINE_METHODS.map((m) => (
+                                                <button
+                                                    key={m.key}
+                                                    type="button"
+                                                    role="radio"
+                                                    aria-checked={onlineMethod === m.key}
+                                                    className={`fdx-method ${onlineMethod === m.key ? 'active' : ''}`}
+                                                    onClick={() => setOnlineMethod(m.key)}
+                                                >
+                                                    <span className="fdx-logo" style={{ color: m.color }}>
+                                                        {m.icon ? <i className={m.icon}></i> : <b>{m.logo}</b>}
+                                                    </span>
+                                                    {m.icon
+                                                        ? <strong>{t(m.labelKey)}</strong>
+                                                        : <small className="fdx-method-sub">{t('fdx_m_mobile')}</small>}
                                                 </button>
+                                            ))}
+                                        </div>
+                                        <p className="fdx-note mt-2 mb-0">
+                                            <i className="fa-solid fa-building-columns me-1"></i>{t('fdx_settle_note')}
+                                        </p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="fdx-step-title mt-4"><span>3</span>{t('fdx_manual_heading')}</div>
+                                        <div className="fdx-panel">
+                                            <div className="fdx-segment fdx-segment-3 mb-3" role="group">
+                                                {[['bkash', 'bKash'], ['nagad', 'Nagad'], ['bank', t('fdx_bank_short')]].map(([key, label]) => (
+                                                    <button key={key} type="button" className={manualMethod === key ? 'active' : ''} onClick={() => setManualMethod(key)}>{label}</button>
+                                                ))}
                                             </div>
-                                        )}
 
-                                        <ol className="small text-muted ps-3 mb-3">
-                                            <li>{t(manualMethod === 'bank' ? 'fdx_manual_step1_bank' : 'fdx_manual_step1', { amount: numericAmount > 0 ? `৳ ${formatTaka(numericAmount)}` : t('fdx_the_amount') })}</li>
-                                            <li>{t('fdx_manual_step2')}</li>
-                                        </ol>
+                                            {manualMethod === 'bank' ? (
+                                                <ul className="list-unstyled small mb-3 fdx-bank">
+                                                    <li><span>{t('fd_bank')}</span><b>{BANK.bank}</b></li>
+                                                    <li><span>{t('fd_acc_name')}</span><b>{BANK.name}</b></li>
+                                                    <li>
+                                                        <span>{t('fd_acc_no')}</span>
+                                                        <b>
+                                                            {BANK.account}
+                                                            <button type="button" className="fdx-copy ms-2" onClick={() => handleCopy(BANK.account, 'acc')}>
+                                                                {copiedText === 'acc' ? t('fd_copied') : t('fd_copy')}
+                                                            </button>
+                                                        </b>
+                                                    </li>
+                                                    <li><span>{t('fd_branch')}</span><b>{BANK.branch}</b></li>
+                                                    <li><span>Routing:</span><b>{BANK.routing}</b></li>
+                                                    <li><span>SWIFT:</span><b>{BANK.swift}</b></li>
+                                                </ul>
+                                            ) : (
+                                                <div className="fdx-number mb-3">
+                                                    <div>
+                                                        <small className="text-muted d-block">{t('fdx_send_money_to', { method: manualMethod === 'bkash' ? 'bKash' : 'Nagad' })}</small>
+                                                        <strong className="fs-5">{MOBILE_NUMBER}</strong>
+                                                    </div>
+                                                    <button type="button" className="fdx-copy" onClick={() => handleCopy(MOBILE_NUMBER, 'mobile')}>
+                                                        <i className="fa-regular fa-copy me-1"></i>{copiedText === 'mobile' ? t('fd_copied') : t('fd_copy')}
+                                                    </button>
+                                                </div>
+                                            )}
 
-                                        <label className="form-label small fw-semibold mb-1" htmlFor="fdx-trx">{t('fdx_trx_label')}</label>
-                                        <input id="fdx-trx" type="text" className={`form-control fdx-input ${errors.trx ? 'is-invalid' : ''}`} placeholder={t('fdx_trx_ph')}
-                                            value={transactionId} maxLength={100} autoComplete="off"
-                                            onChange={(e) => { setTransactionId(e.target.value); clearError('trx'); }} />
-                                        {errors.trx && <div className="fdx-error">{errors.trx}</div>}
-                                    </div>
+                                            <ol className="small text-muted ps-3 mb-3">
+                                                <li>{t(manualMethod === 'bank' ? 'fdx_manual_step1_bank' : 'fdx_manual_step1', { amount: numericAmount > 0 ? `৳ ${formatTaka(numericAmount)}` : t('fdx_the_amount') })}</li>
+                                                <li>{t('fdx_manual_step2')}</li>
+                                            </ol>
+
+                                            <label className="form-label small fw-semibold mb-1" htmlFor="fdx-trx">{t('fdx_trx_label')}</label>
+                                            <input id="fdx-trx" type="text" className={`form-control fdx-input ${errors.trx ? 'is-invalid' : ''}`} placeholder={t('fdx_trx_ph')}
+                                                value={transactionId} maxLength={100} autoComplete="off"
+                                                onChange={(e) => { setTransactionId(e.target.value); clearError('trx'); }} />
+                                            {errors.trx && <div className="fdx-error">{errors.trx}</div>}
+                                        </div>
+                                    </>
                                 )}
 
                                 {numericAmount > 0 && (
@@ -470,6 +482,21 @@ const FundDetails = () => {
                                     <span><i className="fa-solid fa-shield-halved"></i>{isOnline ? t('fdx_trust_ssl') : t('fdx_trust_verify')}</span>
                                     <span><i className="fa-solid fa-building-ngo"></i>{t('fdx_trust_ngo')}</span>
                                 </div>
+
+                                {/* হাতে আগেই টাকা পাঠিয়ে থাকলে TrxID দেওয়ার পথ (online-এর পাশে ছোট করে) */}
+                                {onlineAvailable && (
+                                    <div className="fdx-switch mt-3">
+                                        {isOnline ? (
+                                            <button type="button" onClick={() => setPayMode('manual')}>
+                                                <i className="fa-solid fa-receipt me-1"></i>{t('fdx_switch_manual')}
+                                            </button>
+                                        ) : (
+                                            <button type="button" onClick={() => { setPayMode('online'); clearError('trx'); }}>
+                                                <i className="fa-solid fa-arrow-left me-1"></i>{t('fdx_switch_online')}
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </form>
                         </div>
                     </div>

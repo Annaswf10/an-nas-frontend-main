@@ -173,6 +173,57 @@
     color: #6c7f77;
 }
 .fdx-trust i { color: #008b65; margin-right: 0.35rem; }
+.fdx-methods {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+.fdx-method {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 84px;
+    border: 1.5px solid #dfe8e4;
+    background: #f7f9f8;
+    border-radius: 12px;
+    padding: 0.6rem 0.25rem;
+    transition: all 0.15s ease;
+    position: relative;
+}
+.fdx-method:hover { border-color: #9fcfba; background: #fff; }
+.fdx-method.active { border-color: #008b65; background: #fff; box-shadow: 0 0 0 3px rgba(0, 139, 101, 0.12); }
+.fdx-method.active::after {
+    content: '✓';
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #008b65;
+    color: #fff;
+    font-size: 0.7rem;
+    line-height: 18px;
+    text-align: center;
+}
+.fdx-logo { font-size: 1.35rem; line-height: 1; min-height: 1.6rem; display: flex; align-items: center; }
+.fdx-logo b { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.2px; }
+.fdx-method strong { font-size: 0.82rem; color: #2b3f37; font-weight: 600; }
+.fdx-method-sub { font-size: 0.72rem; color: #6c7f77; }
+.fdx-note { font-size: 0.78rem; color: #6c7f77; }
+.fdx-note i { color: #008b65; }
+.fdx-switch { text-align: center; border-top: 1px dashed #dfe8e4; padding-top: 0.75rem; }
+.fdx-switch button {
+    border: 0;
+    background: transparent;
+    color: #006a4e;
+    font-weight: 600;
+    font-size: 0.88rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
 @media (max-width: 400px) {
     .fdx-chip { font-size: 0.85rem; }
     .fdx-option small { display: none; }
