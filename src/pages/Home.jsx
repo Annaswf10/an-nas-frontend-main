@@ -115,7 +115,6 @@ const Home = () => {
               style={{
                 backgroundImage:
                   "linear-gradient(rgba(0, 106, 78, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')",
-                height: '100vh',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
               }}
@@ -155,7 +154,6 @@ const Home = () => {
               style={{
                 backgroundImage:
                   "linear-gradient(rgba(0, 106, 78, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1593113630400-ea4288922497?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')",
-                height: '100vh',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
               }}

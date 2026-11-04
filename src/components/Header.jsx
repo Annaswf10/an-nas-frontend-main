@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'; // ট্রান্সলে�
 const Header = () => {
     // ট্রান্সলেশন ব্যবহার করার জন্য হুক
     const { t, i18n } = useTranslation();
+    const isBangla = (i18n.resolvedLanguage || i18n.language || 'en').startsWith('bn');
 
     const closeMobileMenu = () => {
         const navbarCollapse = document.getElementById('navbarNav');
@@ -16,7 +17,8 @@ const Header = () => {
 
     // ভাষা পরিবর্তন করার রিয়েল লজিক
     const handleLanguageToggle = () => {
-        const newLang = i18n.language === 'en' ? 'bn' : 'en';
+        // 'bn' হলে English-এ, অন্য যেকোনো কিছু হলে বাংলায় যাবে
+        const newLang = isBangla ? 'en' : 'bn';
         i18n.changeLanguage(newLang);
     };
 
@@ -90,13 +92,17 @@ const Header = () => {
                         {/* ডাইনামিক ভাষা পরিবর্তনের বাটন */}
                         <button 
                             id="lang-toggle" 
-                            className="btn btn-outline-light fw-bold" 
+                            type="button"
+                            className="btn btn-outline-light fw-bold rounded-pill px-3 d-inline-flex align-items-center gap-2" 
+                            aria-label={isBangla ? 'Switch to English' : 'বাংলায় দেখুন'}
+                            title={isBangla ? 'Switch to English' : 'বাংলায় দেখুন'}
                             onClick={() => {
                                 closeMobileMenu();
                                 handleLanguageToggle();
                             }}
                         >
-                            {t('lang_btn')}
+                            <i className="fa-solid fa-globe" aria-hidden="true"></i>
+                            <span lang={isBangla ? 'en' : 'bn'}>{t('lang_btn')}</span>
                         </button>
 
                         <Link className="btn btn-donate" to="/donation" onClick={closeMobileMenu}>{t('nav_donate')}</Link>

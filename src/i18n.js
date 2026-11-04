@@ -1002,13 +1002,36 @@ const resources = {
   },
 };
 
+// ভাষার পছন্দ ব্রাউজারে সেভ থাকে, তাই page reload বা নতুন tab খুললেও একই ভাষা থাকবে
+const LANG_KEY = 'annas_lang';
+const getSavedLang = () => {
+  try {
+    const saved = localStorage.getItem(LANG_KEY);
+    return saved === 'bn' || saved === 'en' ? saved : 'en';
+  } catch {
+    return 'en';
+  }
+};
+
 i18n.use(initReactI18next).init({
   resources,
-  lng: 'en',
+  lng: getSavedLang(),
   fallbackLng: 'en',
   interpolation: {
     escapeValue: false,
   },
 });
+
+// ভাষা বদলালে: পছন্দ সেভ করা + <html lang> ঠিক করা (স্ক্রিন রিডার ও Google-এর জন্য)
+const applyLang = (lng) => {
+  try {
+    localStorage.setItem(LANG_KEY, lng);
+  } catch {
+    // private mode-এ storage না থাকলেও সাইট চলবে
+  }
+  if (typeof document !== 'undefined') document.documentElement.lang = lng;
+};
+applyLang(i18n.language);
+i18n.on('languageChanged', applyLang);
 
 export default i18n;
