@@ -3,6 +3,7 @@ import axios from 'axios';
 import JoditEditor from 'jodit-react';
 import Swal from 'sweetalert2';
 import { API_URL } from '../../config';
+import { checkImageFile, uploadErrorMessage } from '../../uploadError';
 
 const AddBlog = () => {
   const editorEn = useRef(null);
@@ -17,6 +18,11 @@ const AddBlog = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const fileProblem = checkImageFile(image);
+    if (fileProblem) {
+      Swal.fire('Error', fileProblem, 'error');
+      return;
+    }
 
     const formData = new FormData();
     formData.append('title', titleEn);
@@ -42,7 +48,7 @@ const AddBlog = () => {
         document.getElementById('imageUpload').value = '';
       }
     } catch (error) {
-      Swal.fire('Error', 'Failed to publish news.', 'error');
+      Swal.fire('Failed to publish news', uploadErrorMessage(error), 'error');
     }
   };
 

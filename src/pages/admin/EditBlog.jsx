@@ -4,6 +4,7 @@ import JoditEditor from 'jodit-react';
 import Swal from 'sweetalert2';
 import { useParams, useNavigate } from 'react-router-dom';
 import { API_URL } from '../../config';
+import { checkImageFile, uploadErrorMessage } from '../../uploadError';
 
 const EditBlog = () => {
   const { id } = useParams();
@@ -52,6 +53,11 @@ const EditBlog = () => {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    const fileProblem = checkImageFile(image);
+    if (fileProblem) {
+      Swal.fire('Error', fileProblem, 'error');
+      return;
+    }
     const formData = new FormData();
     formData.append('title', titleEn);
     formData.append('title_bn', titleBn);
@@ -69,7 +75,7 @@ const EditBlog = () => {
         navigate('/admin/blogs');
       }
     } catch (error) {
-      Swal.fire('Error', 'Failed to update news.', 'error');
+      Swal.fire('Failed to update news', uploadErrorMessage(error), 'error');
     }
   };
 

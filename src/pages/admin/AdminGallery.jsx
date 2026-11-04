@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { API_URL, mediaUrl } from '../../config';
+import { checkImageFile, uploadErrorMessage } from '../../uploadError';
 
 const AdminGallery = () => {
     const [type, setType] = useState('photo');
@@ -46,6 +47,11 @@ const AdminGallery = () => {
                 Swal.fire('Error', 'অনুগ্রহ করে একটি ছবি নির্বাচন করুন!', 'error');
                 setLoading(false); return;
             }
+            const fileProblem = checkImageFile(image);
+            if (fileProblem) {
+                Swal.fire('Error', fileProblem, 'error');
+                setLoading(false); return;
+            }
             formData.append('image', image);
         } else {
             if (!videoUrl) {
@@ -66,7 +72,7 @@ const AdminGallery = () => {
                 fetchGalleries(); // আপলোড হওয়ার পর টেবিল রিফ্রেশ করবে
             }
         } catch (error) {
-            Swal.fire('Error!', 'আপলোড ব্যর্থ হয়েছে।', 'error');
+            Swal.fire('আপলোড ব্যর্থ হয়েছে', uploadErrorMessage(error), 'error');
         } finally {
             setLoading(false);
         }
