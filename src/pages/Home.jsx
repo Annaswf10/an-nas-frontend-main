@@ -312,6 +312,22 @@ const Home = () => {
                 onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
               >
                 <div className="mx-auto mb-3 text-success fs-1">
+                  <i className="fa-solid fa-hand-holding-dollar"></i>
+                </div>
+                <h4 className="fw-bold" style={{ color: '#006a4e' }}>
+                  {t('service_poverty_title', 'Zero Poverty')}
+                </h4>
+                <p className="text-muted small mb-0">{t('service_poverty_desc')}</p>
+              </div>
+            </div>
+            <div className="col" data-aos="zoom-in" data-aos-delay="200">
+              <div
+                className="card h-100 text-center p-4 shadow border-0 rounded-4"
+                style={{ transition: 'transform 0.3s', cursor: 'pointer' }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-10px)')}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+              >
+                <div className="mx-auto mb-3 text-success fs-1">
                   <i className="fa-solid fa-book-open"></i>
                 </div>
                 <h4 className="fw-bold" style={{ color: '#006a4e' }}>
@@ -320,7 +336,7 @@ const Home = () => {
                 <p className="text-muted small mb-0">{t('service_edu_desc')}</p>
               </div>
             </div>
-            <div className="col" data-aos="zoom-in" data-aos-delay="200">
+            <div className="col" data-aos="zoom-in" data-aos-delay="300">
               <div
                 className="card h-100 text-center p-4 shadow border-0 rounded-4"
                 style={{ transition: 'transform 0.3s', cursor: 'pointer' }}
@@ -336,7 +352,7 @@ const Home = () => {
                 <p className="text-muted small mb-0">{t('service_med_desc')}</p>
               </div>
             </div>
-            <div className="col" data-aos="zoom-in" data-aos-delay="300">
+            <div className="col" data-aos="zoom-in" data-aos-delay="400">
               <div
                 className="card h-100 text-center p-4 shadow border-0 rounded-4"
                 style={{ transition: 'transform 0.3s', cursor: 'pointer' }}
@@ -352,7 +368,7 @@ const Home = () => {
                 <p className="text-muted small mb-0">{t('service_food_desc')}</p>
               </div>
             </div>
-            <div className="col" data-aos="zoom-in" data-aos-delay="400">
+            <div className="col" data-aos="zoom-in" data-aos-delay="500">
               <div
                 className="card h-100 text-center p-4 shadow border-0 rounded-4"
                 style={{ transition: 'transform 0.3s', cursor: 'pointer' }}
@@ -366,22 +382,6 @@ const Home = () => {
                   {t('service_disaster_title')}
                 </h4>
                 <p className="text-muted small mb-0">{t('service_disaster_desc')}</p>
-              </div>
-            </div>
-            <div className="col" data-aos="zoom-in" data-aos-delay="500">
-              <div
-                className="card h-100 text-center p-4 shadow border-0 rounded-4"
-                style={{ transition: 'transform 0.3s', cursor: 'pointer' }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-10px)')}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-              >
-                <div className="mx-auto mb-3 text-success fs-1">
-                  <i className="fa-solid fa-hand-holding-dollar"></i>
-                </div>
-                <h4 className="fw-bold" style={{ color: '#006a4e' }}>
-                  {t('service_poverty_title', 'Zero Poverty')}
-                </h4>
-                <p className="text-muted small mb-0">{t('service_poverty_desc')}</p>
               </div>
             </div>
           </div>
