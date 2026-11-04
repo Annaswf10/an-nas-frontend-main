@@ -1,0 +1,189 @@
+/* ============================================
+   Admin Layout: কম্পিউটারে বাঁ পাশে সাইডবার,
+   মোবাইলে (992px-এর কম) ☰ বাটনে খোলা মেনু
+   ============================================ */
+.admin-shell {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f4f6f9;
+}
+
+/* ---------- Sidebar ---------- */
+.admin-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  background-color: #006a4e;
+  padding: 1rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.15);
+  z-index: 1045;
+}
+
+.admin-brand {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem 0 2.5rem;
+  color: #f5a623;
+  font-family: var(--font-heading, 'Poppins', sans-serif);
+  font-weight: 700;
+  font-size: 1.4rem;
+  letter-spacing: 0.5px;
+}
+
+.admin-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 600;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-link:hover,
+.admin-link:focus-visible {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.admin-link.active,
+.admin-link.active:hover {
+  background-color: #fff;
+  color: #006a4e;
+}
+
+/* ---------- Top bar ---------- */
+.admin-main {
+  flex: 1;
+  min-width: 0; /* টেবিল চওড়া হলেও পুরো পেজ পাশে সরে যাবে না */
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background-color: #fff;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08);
+}
+
+.admin-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #2d3436;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-hello {
+  align-items: center;
+  gap: 0.5rem;
+  color: #6c757d;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin-logout {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.admin-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 10px;
+  font-size: 1.25rem;
+  background: transparent;
+}
+
+.admin-menu-btn {
+  color: #006a4e;
+  background-color: #e8f3ef;
+}
+
+.admin-close {
+  position: absolute;
+  right: 0;
+  color: #fff;
+}
+
+.admin-icon-btn:focus-visible,
+.admin-link:focus-visible {
+  outline: 3px solid #f5a623;
+  outline-offset: 2px;
+}
+
+/* ---------- Page content ---------- */
+.admin-content {
+  padding: 1.5rem;
+  min-width: 0;
+}
+
+/* ---------- Mobile & tablet ---------- */
+@media (max-width: 991.98px) {
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(280px, 82vw);
+    height: 100%;
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform 0.25s ease, visibility 0s linear 0.25s;
+  }
+
+  .admin-sidebar.is-open {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.25s ease;
+  }
+
+  .admin-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1040;
+    background-color: rgba(0, 0, 0, 0.45);
+  }
+
+  .admin-topbar {
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .admin-title {
+    font-size: 1.15rem;
+  }
+
+  .admin-content {
+    padding: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-sidebar,
+  .admin-sidebar.is-open {
+    transition: none;
+  }
+}
